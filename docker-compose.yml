@@ -83,7 +83,6 @@ services:
       - pglab
 
   application01:
-    image: application
     build: ./application
     container_name: application01
     hostname: application01
@@ -102,7 +101,6 @@ services:
       - pglab
 
   application02:
-    image: application
     build: ./application
     container_name: application02
     hostname: application02
