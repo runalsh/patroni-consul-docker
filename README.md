@@ -1,2 +1,2 @@
-Dont need load balancer (haproxy etc) - use consul instead on replica.<scope>.service.consul
+Dont need load balancer (haproxy etc) - use consul instead  - replica.*.service.consul
 
