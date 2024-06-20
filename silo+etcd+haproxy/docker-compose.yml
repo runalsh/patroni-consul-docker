@@ -96,7 +96,7 @@ services:
 #     ports:
 #       - 9187:9187
 #     environment:
-#       - DATA_SOURCE_NAME=postgresql://postgres:postgres@postgres:5432/postgres?sslmode=disable
+#       - DATA_SOURCE_NAME=postgresql://postgres:postgres@patroni1:5432/postgres?sslmode=disable,postgresql://postgres:postgres@patroni2:5432/postgres?sslmode=disable,postgresql://postgres:postgres@patroni3:5432/postgres?sslmode=disable
 #       - PG_EXPORTER_AUTO_DISCOVER_DATABASES=true
 
 #   prometheus:
@@ -122,10 +122,11 @@ services:
 #       - POSTGRESQL_PASSWORD=postgres
 #       - POSTGRESQL_DATABASE=postgres
 #       - PGBOUNCER_DATABASE=postgres
-#     extra_hosts:
-#       - "postgres:${DATABASE_IP}"
+# #    extra_hosts:
+# #      - "postgres:${DATABASE_IP}"
 #     volumes:
 #       - ./pgbouncer.ini:/bitnami/pgbouncer/conf/pgbouncer.ini
+#       - ./userlist.txt:/opt/bitnami/pgbouncer/conf/userlist.txt
 
 #   pgbouncer-exporter:
 # #    <<: *network
