@@ -43,11 +43,6 @@ services:
     ports:
       - "5000:5000"
       - "5001:5001"
-    command: haproxy
-    environment: &haproxy_env
-      ETCDCTL_ENDPOINTS: http://etcd1:2379,http://etcd2:2379,http://etcd3:2379
-      PATRONI_ETCD3_HOSTS: "'etcd1:2379','etcd2:2379','etcd3:2379'"
-      PATRONI_SCOPE: patroni
 
   patroni1:
 #    <<: *network
@@ -57,7 +52,9 @@ services:
     container_name: patroni-patroni1
     init: true
     environment:
-      <<: *haproxy_env
+      ETCDCTL_ENDPOINTS: http://etcd1:2379,http://etcd2:2379,http://etcd3:2379
+      PATRONI_ETCD3_HOSTS: "'etcd1:2379','etcd2:2379','etcd3:2379'"
+      PATRONI_SCOPE: patroni
       PATRONI_NAME: patroni1
 
   patroni2:
@@ -69,7 +66,9 @@ services:
     container_name: patroni-patroni2
     init: true
     environment:
-      <<: *haproxy_env
+      ETCDCTL_ENDPOINTS: http://etcd1:2379,http://etcd2:2379,http://etcd3:2379
+      PATRONI_ETCD3_HOSTS: "'etcd1:2379','etcd2:2379','etcd3:2379'"
+      PATRONI_SCOPE: patroni
       PATRONI_NAME: patroni2
 
   patroni3:
@@ -81,7 +80,9 @@ services:
     container_name: patroni-patroni3
     init: true
     environment:
-      <<: *haproxy_env
+      ETCDCTL_ENDPOINTS: http://etcd1:2379,http://etcd2:2379,http://etcd3:2379
+      PATRONI_ETCD3_HOSTS: "'etcd1:2379','etcd2:2379','etcd3:2379'"
+      PATRONI_SCOPE: patroni
       PATRONI_NAME: patroni3
 
 #   postgres-exporter:
