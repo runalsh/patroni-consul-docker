@@ -1,0 +1,212 @@
+
+x-network: &network
+  networks:
+    - patroni
+
+services:
+
+  etcd1: &etcd
+#    <<: *network
+    image: ghcr.io/zalando/spilo-16:3.2-p3
+    environment:
+      ETCD_LISTEN_PEER_URLS: http://0.0.0.0:2380
+      ETCD_LISTEN_CLIENT_URLS: http://0.0.0.0:2379
+      ETCD_ADVERTISE_CLIENT_URLS: http://0.0.0.0:2379
+      ETCD_INITIAL_CLUSTER: etcd1=http://etcd1:2380,etcd2=http://etcd2:2380,etcd3=http://etcd3:2380
+      ETCD_INITIAL_CLUSTER_STATE: new
+      ETCD_INITIAL_CLUSTER_TOKEN: tutorial
+    container_name: patroni-etcd1
+    init: true
+    hostname: etcd1
+    command: etcd -name etcd1 -initial-advertise-peer-urls http://etcd1:2380
+
+  etcd2:
+    <<: *etcd
+    container_name: patroni-etcd2
+    init: true
+    hostname: etcd2
+    command: etcd -name etcd2 -initial-advertise-peer-urls http://etcd2:2380
+
+  etcd3:
+    <<: *etcd
+    container_name: patroni-etcd3
+    init: true
+    hostname: etcd3
+    command: etcd -name etcd3 -initial-advertise-peer-urls http://etcd3:2380
+
+  haproxy:
+#    <<: *network
+    image: runalsh/haproxy
+    hostname: haproxy
+    container_name: patroni-haproxy
+    init: true
+    ports:
+      - "5000:5000"
+      - "5001:5001"
+    command: haproxy
+    environment: &haproxy_env
+      ETCDCTL_ENDPOINTS: http://etcd1:2379,http://etcd2:2379,http://etcd3:2379
+      PATRONI_ETCD3_HOSTS: "'etcd1:2379','etcd2:2379','etcd3:2379'"
+      PATRONI_SCOPE: patroni
+
+  patroni1:
+#    <<: *network
+    image: ghcr.io/zalando/spilo-16:3.2-p3
+    env_file: patroni.env
+    hostname: patroni1
+    container_name: patroni-patroni1
+    init: true
+    environment:
+      <<: *haproxy_env
+      PATRONI_NAME: patroni1
+
+  patroni2:
+#    <<: *network
+
+    image: ghcr.io/zalando/spilo-16:3.2-p3
+    env_file: patroni.env
+    hostname: patroni2
+    container_name: patroni-patroni2
+    init: true
+    environment:
+      <<: *haproxy_env
+      PATRONI_NAME: patroni2
+
+  patroni3:
+#    <<: *network
+
+    image: ghcr.io/zalando/spilo-16:3.2-p3
+    env_file: patroni.env
+    hostname: patroni3
+    container_name: patroni-patroni3
+    init: true
+    environment:
+      <<: *haproxy_env
+      PATRONI_NAME: patroni3
+
+#   postgres-exporter:
+# #    <<: *network
+#     image: quay.io/prometheuscommunity/postgres-exporter
+#     profiles:
+#       - prometheus
+#     restart: on-failure
+#     container_name: postgres-exporter
+#     init: true
+#     ports:
+#       - 9187:9187
+#     environment:
+#       - DATA_SOURCE_NAME=postgresql://postgres:postgres@postgres:5432/postgres?sslmode=disable
+#       - PG_EXPORTER_AUTO_DISCOVER_DATABASES=true
+
+#   prometheus:
+# #    <<: *network
+
+#     image: prom/prometheus
+#     profiles:
+#       - prometheus
+#     volumes:
+#       - ./postgres-server.json:/etc/prometheus/targets/postgres-server.json
+
+#   pgbouncer:
+# #    <<: *network
+#     image: bitnami/pgbouncer
+#     restart: on-failure
+#     container_name: pgbouncer
+#     init: true
+#     ports:
+#       - 6432:6432
+#     environment:
+#       - POSTGRESQL_HOST=postgres
+#       - POSTGRESQL_USER=postgres
+#       - POSTGRESQL_PASSWORD=postgres
+#       - POSTGRESQL_DATABASE=postgres
+#       - PGBOUNCER_DATABASE=postgres
+#     extra_hosts:
+#       - "postgres:${DATABASE_IP}"
+#     volumes:
+#       - ./pgbouncer.ini:/bitnami/pgbouncer/conf/pgbouncer.ini
+
+#   pgbouncer-exporter:
+# #    <<: *network
+#     depends_on:
+#       - pgbouncer
+#     restart: on-failure
+#     image: prometheuscommunity/pgbouncer-exporter
+#     container_name: pgbouncer-exporter
+#     command:
+#       - --pgBouncer.connectionString=postgres://postgres:postgres@pgbouncer:6432/pgbouncer?sslmode=disable&dbname=pgbouncer
+#       - --web.listen-address=:9127
+#     ports:
+#       - 9127:9127
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
