@@ -1,0 +1,127 @@
+
+services:
+  postgres-master:
+    image: postgres:16.3-alpine
+    ports:
+      - '5432:5432'
+    volumes:
+      - 'postgres_master_data:/var/lib/postgresql'
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./inflation.csv:/docker-entrypoint-initdb.d/inflation.csv
+    environment:
+      POSTGRES_PGAUDIT_LOG: READ,WRITE
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_LOG_HOSTNAME: true
+      POSTGRES_REPLICATION_MODE: master
+      POSTGRES_REPLICATION_USER: repl_user
+      POSTGRES_REPLICATION_PASSWORD: repl_password
+      POSTGRES_USERNAME: postgres
+      POSTGRES_DATABASE: db
+      ALLOW_EMPTY_PASSWORD: yes
+      POSTGRES_HOST_AUTH_METHOD: "scram-sha-256\nhost replication repl_user 0.0.0.0/0 md5"
+      POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256"
+    # command: |
+    #     postgres 
+    #     -c wal_level=replica 
+    #     -c hot_standby=on 
+    #     -c max_wal_senders=10
+    #     -c max_replication_slots=10 
+    #     -c hot_standby_feedback=on
+    healthcheck:
+      test: 'pg_isready -U postgres --dbname=postgres'
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgres-replica:
+    image: postgres:16.3-alpine
+    ports:
+      - '5435:5432'
+    volumes:
+      - 'postgres_repl_data:/var/lib/postgresql'
+    user: postgres
+    environment:
+      PGUSER: repl_user
+      PGPASSWORD: repl_password
+    command: |
+      bash -c "
+      until pg_basebackup --pgdata=/var/lib/postgresql/data -R --slot=replication_slot --host=postgres-master --port=5432
+      do
+      echo 'Waiting for primary to connect...'
+      sleep 1s
+      done
+      echo 'Backup done, starting replica...'
+      chmod 0700 /var/lib/postgresql/data
+      postgres
+      "
+    depends_on:
+      - postgres-master
+
+  postgres-slave1:
+      image: postgres:16.3-alpine
+      ports:
+        - '5433:5432'
+      depends_on:
+        - postgres-master
+      volumes:
+      - 'postgres_slave1_data:/var/lib/postgresql'
+      environment:
+        - POSTGRES_USERNAME=postgres
+        - POSTGRES_PASSWORD=postgres
+        - POSTGRES_MASTER_HOST=POSTGRES-master
+        - POSTGRES_PGAUDIT_LOG=READ,WRITE
+        - POSTGRES_LOG_HOSTNAME=true
+        - POSTGRES_REPLICATION_MODE=slave
+        - POSTGRES_REPLICATION_USER=repl_user
+        - POSTGRES_REPLICATION_PASSWORD=repl_password
+        - POSTGRES_MASTER_PORT_NUMBER=5432
+
+
+  postgres-slave2:
+      image: postgres:16.3-alpine
+      ports:
+        - '5434:5432'
+      depends_on:
+        - postgres-master
+      environment:
+        - POSTGRES_USERNAME=postgres
+        - POSTGRES_PASSWORD=postgres
+        - POSTGRES_MASTER_HOST=postgres-master
+        - POSTGRES_PGAUDIT_LOG=READ,WRITE
+        - POSTGRES_LOG_HOSTNAME=true
+        - POSTGRES_REPLICATION_MODE=slave
+        - POSTGRES_REPLICATION_USER=repl_user
+        - POSTGRES_REPLICATION_PASSWORD=repl_password
+        - POSTGRES_MASTER_PORT_NUMBER=5432
+      volumes:
+      - 'postgres_slave2_data:/var/lib/postgresql'
+
+  haproxy-lb:
+    image: haproxy:3.0.2-alpine
+    container_name: haproxy-lb
+    restart: "no"
+    volumes:
+      - "./haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg"
+    ports:
+      - "5002:5002"
+      - "7002:7002"
+    depends_on:
+      - postgres-master
+      - postgres-slave1
+      - postgres-slave2
+
+  pgadmin:
+    container_name: pgadmin
+    image: dpage/pgadmin4
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: pgadmin@pgadmin.com
+      PGADMIN_DEFAULT_PASSWORD: pgadmin
+    ports:
+      - "5050:80"
+      
+volumes:
+  postgres_master_data:
+  postgres_slave2_data:
+  postgres_slave1_data:
+  postgres_repl_data:
